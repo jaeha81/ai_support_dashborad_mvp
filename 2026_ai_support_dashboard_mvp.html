@@ -1011,7 +1011,9 @@ generateDraft();
 (function() {
   const AI_FIELDS = [
     'itemSummary','currentProcess','painPoint','aiNeed','aiMethod',
-    'targetCustomer','customerProblem','differentiation','bmImprovement','revenueModel',
+    'dataSources','humanReview','outputs',
+    'targetCustomer','customerProblem','competitors','differentiation',
+    'bmImprovement','revenueModel','goToMarket','scalability',
     'month1','month2','month3','capacity','risks'
   ];
 
@@ -1026,6 +1028,12 @@ generateDraft();
     differentiation: { label:'차별화 요소',                   format:'경쟁 대비 구체적 차별점 2~3개.' },
     bmImprovement:   { label:'AI 적용 후 사업모델 개선',     format:'원가 절감·신규서비스·재구매 등 수치 포함 2~3문장.' },
     revenueModel:    { label:'수익모델',                      format:'현재 수익 구조와 AI 도입 후 변화 1~2문장.' },
+    dataSources:     { label:'사용 데이터',                    format:'AI 학습·운영에 쓸 데이터 종류 나열. 개인정보·영업비밀 처리방식 포함. 2~3문장.' },
+    humanReview:     { label:'사람의 검수·통제 절차',          format:'AI 출력의 오류·리스크를 누가 어떤 기준으로 검수하고 최종 판단하는지 2~3문장.' },
+    outputs:         { label:'최종 산출물',                    format:'AI 도입 후 실제 산출물 목록. 구체적 결과물 이름과 형태. 2~4줄.' },
+    competitors:     { label:'경쟁·대체 방식',                 format:'고객이 현재 사용하는 대안·경쟁업체·수작업 방식과 그 한계. 2~3문장.' },
+    goToMarket:      { label:'시장진입·마케팅 계획',           format:'기존 고객 테스트 → 사례 확보 → 확장 순서의 단계별 계획. 3~5줄.' },
+    scalability:     { label:'지속성·확장성',                  format:'사업 종료 후 운영비·데이터 축적·타지역·타업종 확장 가능성. 2~3문장.' },
     month1:          { label:'1개월차 실행계획',              format:'요구사항 정의·데이터 정비·설계·공급사 선정. 산출물 명시. 3~5줄.' },
     month2:          { label:'2개월차 실행계획',              format:'개발·연계·시제품·내부테스트·교육. 산출물 명시. 3~5줄.' },
     month3:          { label:'3개월차 실행계획',              format:'현장실증·KPI 측정·개선·상용화. 산출물 명시. 3~5줄.' },
