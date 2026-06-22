@@ -121,6 +121,14 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 .inline-total{display:flex;align-items:center;gap:10px;justify-content:flex-end;font-weight:800;padding:12px 0}
 .sourcebox{background:#f8fafc;border:1px dashed #cfd7e5;border-radius:13px;padding:14px;font-size:12px;color:#475467}
 .hidden{display:none!important}
+.modal-overlay{position:fixed;inset:0;background:rgba(11,31,58,.58);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;border-radius:22px;padding:36px 28px 28px;max-width:420px;width:100%;box-shadow:0 28px 72px rgba(0,0,0,.22);text-align:center;animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.modal-icon{font-size:52px;margin-bottom:14px;line-height:1}
+.modal-title{font-size:21px;font-weight:900;margin:0 0 10px;color:#0b1f3a}
+.modal-desc{color:#475467;font-size:13.5px;line-height:1.7;margin:0 0 24px}
+.modal-footer{display:flex;gap:10px;justify-content:center}
 .toast{position:fixed;right:24px;bottom:24px;background:#0f1f38;color:#fff;padding:12px 16px;border-radius:11px;box-shadow:0 12px 32px rgba(0,0,0,.2);opacity:0;transform:translateY(15px);pointer-events:none;transition:.22s;z-index:50}
 .toast.show{opacity:1;transform:none}
 @media(max-width:1080px){
@@ -168,6 +176,7 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
       <button class="btn btn-ghost btn-sm hidden" id="installBtn">앱 설치</button>
       <button class="btn btn-ghost btn-sm" id="saveBtn">저장</button>
       <button class="btn btn-ghost btn-sm" id="backupBtn">백업</button>
+      <button class="btn btn-primary btn-sm" id="finalSendBtn">최종 전송</button>
     </div>
   </div>
 </header>
@@ -462,6 +471,31 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 </div>
 <div class="toast" id="toast">저장했습니다.</div>
 <div class="toast" id="swToast" style="bottom:72px">오프라인에서도 사용 가능합니다.</div>
+
+<!-- 최종 전송 확인 모달 -->
+<div class="modal-overlay hidden" id="confirmModal">
+  <div class="modal">
+    <div class="modal-icon">📨</div>
+    <h3 class="modal-title">최종 전송 확인</h3>
+    <p class="modal-desc">모든 항목을 완료하고 최종 전송하시겠습니까?<br><small style="color:#98a2b3">입력된 내용 전체가 담당자 이메일로 발송됩니다.</small></p>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="modalBackBtn" style="min-width:110px">뒤돌아가기</button>
+      <button class="btn btn-primary" id="modalSendBtn" style="min-width:110px">전송하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 발송 완료 모달 -->
+<div class="modal-overlay hidden" id="successModal">
+  <div class="modal">
+    <div class="modal-icon">✅</div>
+    <h3 class="modal-title">전송 완료</h3>
+    <p class="modal-desc">본 내용은 담당자에게 이메일로 발송되었습니다.<br><small style="color:#98a2b3">브라우저에도 자동 저장되었습니다.</small></p>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="successBackBtn" style="min-width:140px">뒤돌아가기</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const STORAGE_KEY = "ai_support_dashboard_2026_v1";
@@ -761,20 +795,49 @@ function download(name,content,type){
 $("#txtBtn").addEventListener("click",()=>{if(requireTruth())download("2026_AI활용지원_사업계획서_초안.txt",$("#draftOutput").textContent,"text/plain;charset=utf-8")});
 $("#docBtn").addEventListener("click",()=>{if(!requireTruth())return;const body=esc($("#draftOutput").textContent).replace(/\n/g,"<br>");download("2026_AI활용지원_사업계획서_초안.doc",`<html><meta charset="utf-8"><body style="font-family:Malgun Gothic;line-height:1.7">${body}</body></html>`,"application/msword")});
 $("#backupBtn").addEventListener("click",()=>{collectState();download("ai_support_dashboard_backup.json",JSON.stringify(state,null,2),"application/json;charset=utf-8")});
-$("#saveBtn").addEventListener("click", async () => {
+$("#saveBtn").addEventListener("click",()=>{collectState();toast("현재 브라우저에 저장했습니다.")});
+
+// 최종 전송 모달
+const _confirmModal = document.getElementById("confirmModal");
+const _successModal = document.getElementById("successModal");
+
+document.getElementById("finalSendBtn").addEventListener("click",()=>{
   collectState();
-  toast("저장 중…");
+  _confirmModal.classList.remove("hidden");
+});
+document.getElementById("modalBackBtn").addEventListener("click",()=>{
+  _confirmModal.classList.add("hidden");
+});
+_confirmModal.addEventListener("click", e=>{
+  if(e.target===_confirmModal) _confirmModal.classList.add("hidden");
+});
+document.getElementById("modalSendBtn").addEventListener("click", async ()=>{
+  const btn = document.getElementById("modalSendBtn");
+  btn.textContent="전송 중…"; btn.disabled=true;
   try {
-    const resp = await fetch('/api/save', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(state)
+    const resp = await fetch("/api/save",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(state)
     });
-    if (resp.ok) toast("저장하고 메일로 전송했습니다.");
-    else toast("저장했습니다. (메일 오류 — 환경변수 확인 필요)");
+    _confirmModal.classList.add("hidden");
+    if(resp.ok){
+      _successModal.classList.remove("hidden");
+    } else {
+      toast("전송 실패 — Vercel 환경변수를 확인해주세요.");
+    }
   } catch {
-    toast("저장했습니다. (오프라인 — 메일 미전송)");
+    _confirmModal.classList.add("hidden");
+    toast("전송 실패 — 오프라인 상태입니다.");
+  } finally {
+    btn.textContent="전송하기"; btn.disabled=false;
   }
+});
+document.getElementById("successBackBtn").addEventListener("click",()=>{
+  _successModal.classList.add("hidden");
+});
+_successModal.addEventListener("click", e=>{
+  if(e.target===_successModal) _successModal.classList.add("hidden");
 });
 
 document.addEventListener("input",e=>{if(e.target.matches("[data-field],[data-multi],[data-doc],[data-score]"))collectState()});
