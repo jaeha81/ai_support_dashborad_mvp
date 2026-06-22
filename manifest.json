@@ -1,0 +1,27 @@
+{
+  "name": "혁신 소상공인 AI 활용지원 템플릿 빌더",
+  "short_name": "AI 활용지원",
+  "description": "2026 혁신 소상공인 AI 활용지원 사업 신청 지원 대시보드",
+  "start_url": "/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f7fb",
+  "theme_color": "#0b1f3a",
+  "lang": "ko",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

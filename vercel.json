@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/2026_ai_support_dashboard_mvp.html" }
+  ]
+}
