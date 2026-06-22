@@ -379,6 +379,10 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
           <div><h3 style="margin:0 0 4px">성과지표(KPI)</h3><p class="sub" style="margin:0">’좋아진다’보다 시간·비용·전환율·오류율처럼 측정 가능한 지표를 사용합니다.</p></div>
           <button class="btn btn-secondary btn-sm" id="kpiGuideBtn">💡 업종별 KPI 추천</button>
         </div>
+        <div class="callout ok" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <span>🤖 <b>지금 바로 입력하지 않아도 됩니다.</b> 기본정보 하단의 <b>AI 맞춤 설계</b>를 실행하면 고객 정보를 바탕으로 자동 작성됩니다.</span>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById(‘designGenBtn’).click()" style="white-space:nowrap;flex-shrink:0">🎯 AI 맞춤 설계 열기</button>
+        </div>
         <div class="grid-3">
           <div class="field"><label>KPI 1</label><input type="text" data-field="kpi1" placeholder="예: 견적 작성시간"></div>
           <div class="field"><label>현재값</label><input type="text" data-field="kpi1Base" placeholder="예: 건당 4시간"></div>
@@ -429,9 +433,9 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
           <b>인건비는 지원 불가.</b> 자부담 20%는 대표자 인건비·임대료 등으로 처리 가능합니다.
         </div>
         <div class="grid-3">
-          <div class="field"><label class="required">총사업비</label><input type="number" min="0" max="40000000" step="100000" data-field="totalBudget" id="totalBudget" placeholder="40000000"></div>
-          <div class="field"><label>정부지원금 상한(80%)</label><input type="text" id="govBudget" readonly></div>
-          <div class="field"><label>자부담 최소(20%)</label><input type="text" id="selfBudget" readonly></div>
+          <div class="field"><label class="required">총사업비</label><input type="number" min="0" max="40000000" step="100000" data-field="totalBudget" id="totalBudget" value="40000000"></div>
+          <div class="field"><label>정부지원금 <b style="color:var(--ok)">(80% · 최대 3,200만원)</b></label><input type="text" id="govBudget" readonly style="font-size:16px;font-weight:800;color:var(--ok);background:#eefaf6;border-color:#bfe6d6"></div>
+          <div class="field"><label>자부담 <b style="color:var(--warn)">(20% · 최소 800만원)</b></label><input type="text" id="selfBudget" readonly style="font-size:16px;font-weight:800;color:var(--warn);background:#fff9eb;border-color:#f3d58f"></div>
         </div>
         <div id="budgetAlert" class="callout warn" style="margin-top:14px">총사업비를 입력해 주세요.</div>
         <hr>
@@ -460,13 +464,14 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
           <div><b style="font-size:19px">총 100점 기준 작성 준비도</b><p class="sub" id="scoreComment">핵심 내용을 입력한 뒤 자동 진단을 실행하세요.</p></div>
         </div>
         <hr>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px">슬라이더는 자동 진단 버튼으로만 업데이트됩니다. 직접 수정은 불가합니다.</p>
         <div id="scoreRows">
-          <div class="score-row"><label>AI 전략 명확성·도입 필요성 <small>(15)</small></label><input type="range" min="0" max="5" value="0" data-score="fit1" data-weight="15"><div class="score-num" id="fit1Num">0/15</div></div>
-          <div class="score-row"><label>업무 프로세스 적용 가능성 <small>(15)</small></label><input type="range" min="0" max="5" value="0" data-score="fit2" data-weight="15"><div class="score-num" id="fit2Num">0/15</div></div>
-          <div class="score-row"><label>사업모델 개선 가능성 <small>(20)</small></label><input type="range" min="0" max="5" value="0" data-score="growth1" data-weight="20"><div class="score-num" id="growth1Num">0/20</div></div>
-          <div class="score-row"><label>시장성·경쟁력·지속성장 <small>(20)</small></label><input type="range" min="0" max="5" value="0" data-score="growth2" data-weight="20"><div class="score-num" id="growth2Num">0/20</div></div>
-          <div class="score-row"><label>참여의지·수행역량 <small>(15)</small></label><input type="range" min="0" max="5" value="0" data-score="cap1" data-weight="15"><div class="score-num" id="cap1Num">0/15</div></div>
-          <div class="score-row"><label>계획의 구체성·실행가능성 <small>(15)</small></label><input type="range" min="0" max="5" value="0" data-score="cap2" data-weight="15"><div class="score-num" id="cap2Num">0/15</div></div>
+          <div class="score-row"><label>AI 전략 명확성·도입 필요성 <small>(15)</small></label><input type="range" min="0" max="5" value="0" data-score="fit1" data-weight="15" style="pointer-events:none;cursor:default"><div class="score-num" id="fit1Num">0/15</div></div>
+          <div class="score-row"><label>업무 프로세스 적용 가능성 <small>(15)</small></label><input type="range" min="0" max="5" value="0" data-score="fit2" data-weight="15" style="pointer-events:none;cursor:default"><div class="score-num" id="fit2Num">0/15</div></div>
+          <div class="score-row"><label>사업모델 개선 가능성 <small>(20)</small></label><input type="range" min="0" max="5" value="0" data-score="growth1" data-weight="20" style="pointer-events:none;cursor:default"><div class="score-num" id="growth1Num">0/20</div></div>
+          <div class="score-row"><label>시장성·경쟁력·지속성장 <small>(20)</small></label><input type="range" min="0" max="5" value="0" data-score="growth2" data-weight="20" style="pointer-events:none;cursor:default"><div class="score-num" id="growth2Num">0/20</div></div>
+          <div class="score-row"><label>참여의지·수행역량 <small>(15)</small></label><input type="range" min="0" max="5" value="0" data-score="cap1" data-weight="15" style="pointer-events:none;cursor:default"><div class="score-num" id="cap1Num">0/15</div></div>
+          <div class="score-row"><label>계획의 구체성·실행가능성 <small>(15)</small></label><input type="range" min="0" max="5" value="0" data-score="cap2" data-weight="15" style="pointer-events:none;cursor:default"><div class="score-num" id="cap2Num">0/15</div></div>
         </div>
       </div>
       <div class="card">
@@ -478,23 +483,98 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
     <!-- 7. 제출서류 -->
     <section class="panel" id="panel-6">
       <div class="card">
-        <div class="section-title"><div><h3>제출서류 체크리스트</h3><p class="sub">공공 마이데이터 연동 여부와 발급 이력을 함께 확인합니다.</p></div><span class="status status-warn" id="docsBadge">0/7</span></div>
-        <div class="choice-row" style="margin-bottom:14px">
+        <div class="section-title"><div><h3>제출서류 체크리스트</h3><p class="sub">소상공인이 준비할 서류와 담당자가 처리할 서류를 구분했습니다. 모두 준비되면 함께 취합해 신청합니다.</p></div><span class="status status-warn" id="docsBadge">0/7</span></div>
+        <div class="choice-row" style="margin-bottom:18px">
           <label class="choice"><input type="checkbox" data-field="mydata">공공 마이데이터 제공요구 동의 예정</label>
           <label class="choice"><input type="checkbox" data-field="bonusDoc">가점 증빙서류 해당</label>
         </div>
-        <div class="checklist" id="docsList">
-          <label class="checkitem"><input type="checkbox" data-doc="사업신청서"><div><strong>사업신청서</strong><small>소상공인24 공식 서식 온라인 작성 (별도 첨부)</small></div><span class="status status-warn">필수</span></label>
-          <label class="checkitem"><input type="checkbox" data-doc="사업계획서"><div><strong>사업계획서</strong><small>공식 서식에 작성 후 첨부</small></div><span class="status status-warn">필수</span></label>
-          <label class="checkitem"><input type="checkbox" data-doc="중소기업확인서"><div><strong>중소기업확인서(소상공인확인서)</strong><small>마이데이터 또는 직접 발급</small></div><span class="status status-warn">필수</span></label>
-          <label class="checkitem"><input type="checkbox" data-doc="사업자등록증"><div><strong>사업자등록증</strong><small>업체·주대표 정보 일치 확인</small></div><span class="status status-warn">필수</span></label>
-          <label class="checkitem"><input type="checkbox" data-doc="국세 납세증명서"><div><strong>국세 납세증명서</strong><small>개인·법인 해당 기준 확인</small></div><span class="status status-warn">필수</span></label>
-          <label class="checkitem"><input type="checkbox" data-doc="지방세 납세증명서"><div><strong>지방세 납세증명서</strong><small>개인·법인 해당 기준 확인</small></div><span class="status status-warn">필수</span></label>
-          <label class="checkitem"><input type="checkbox" data-doc="부가가치세과세표준증명"><div><strong>부가가치세과세표준증명</strong><small>2023·2024·2025년 최근 3개년 / 또는 매출 확인서류</small></div><span class="status status-warn">필수</span></label>
-          <label class="checkitem"><input type="checkbox" data-doc="공동대표/가점 서류"><div><strong>공동대표 또는 가점 증빙</strong><small>해당 시 사업자등록증명원·공동대표 확인서·가점자료</small></div><span class="status status-ok">해당 시</span></label>
+
+        <!-- Section A: 소상공인 직접 준비 -->
+        <div style="background:#f0f5ff;border:1px solid #dfe8ff;border-radius:14px;padding:16px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="background:#2f63ff;color:#fff;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">소상공인 직접 준비</span>
+            <span style="font-size:12px;color:var(--muted)">아래 서류는 소상공인이 직접 발급·준비합니다</span>
+          </div>
+          <div class="checklist" id="docsList">
+            <label class="checkitem"><input type="checkbox" data-doc="중소기업확인서">
+              <div>
+                <strong>중소기업확인서 (소상공인확인서)</strong>
+                <small>📍 <b>발급처:</b> 중소기업현황정보시스템(sminfo.mss.go.kr) 또는 소상공인24</small>
+                <small>⚠️ 신청일 기준 유효기간 확인 필수 · 마이데이터 연동 가능</small>
+              </div>
+              <span class="status status-warn">필수</span>
+            </label>
+            <label class="checkitem"><input type="checkbox" data-doc="사업자등록증">
+              <div>
+                <strong>사업자등록증 사본</strong>
+                <small>📍 <b>발급처:</b> 국세청 홈택스(hometax.go.kr) → 사업자등록증명 출력</small>
+                <small>⚠️ 업태·종목이 신청 업종과 일치하는지 반드시 확인</small>
+              </div>
+              <span class="status status-warn">필수</span>
+            </label>
+            <label class="checkitem"><input type="checkbox" data-doc="국세 납세증명서">
+              <div>
+                <strong>국세 납세증명서</strong>
+                <small>📍 <b>발급처:</b> 국세청 홈택스 → 민원증명 → 납세증명서 (무료)</small>
+                <small>⚠️ 발급일 기준 30일 이내 서류만 유효 · 개인/법인 구분 확인</small>
+              </div>
+              <span class="status status-warn">필수</span>
+            </label>
+            <label class="checkitem"><input type="checkbox" data-doc="지방세 납세증명서">
+              <div>
+                <strong>지방세 납세증명서</strong>
+                <small>📍 <b>발급처:</b> 위택스(wetax.go.kr) 또는 가까운 시·군·구청 (무료)</small>
+                <small>⚠️ 발급일 기준 30일 이내 서류만 유효</small>
+              </div>
+              <span class="status status-warn">필수</span>
+            </label>
+            <label class="checkitem"><input type="checkbox" data-doc="부가가치세과세표준증명">
+              <div>
+                <strong>부가가치세 과세표준증명 (최근 3개년)</strong>
+                <small>📍 <b>발급처:</b> 홈택스 → 민원증명 → 부가가치세 과세표준증명 (2023·2024·2025년)</small>
+                <small>⚠️ 간이과세자는 세금계산서 합계표 또는 매출 확인 서류로 대체 가능</small>
+              </div>
+              <span class="status status-warn">필수</span>
+            </label>
+            <label class="checkitem"><input type="checkbox" data-doc="공동대표/가점 서류">
+              <div>
+                <strong>공동대표 또는 가점 증빙 서류</strong>
+                <small>📍 공동대표 확인서, 사업자등록증명원, 가점 해당 자료</small>
+                <small>⚠️ 해당하는 경우에만 제출 (여성기업확인서, 장애인확인서 등)</small>
+              </div>
+              <span class="status status-ok">해당 시</span>
+            </label>
+          </div>
         </div>
-        <div class="sourcebox" style="margin-top:16px">
-          마이데이터에 동의해도 신청일 기준 발급 이력이 없으면 자동 확인이 되지 않을 수 있으므로, 제출 직전 실제 연동 여부를 확인하세요. 파일은 항목당 최대 30MB 기준으로 준비합니다.
+
+        <!-- Section B: 담당자/컨설턴트 준비 -->
+        <div style="background:#f0faf6;border:1px solid #bfe6d6;border-radius:14px;padding:16px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span style="background:#138a62;color:#fff;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800">담당자 준비</span>
+            <span style="font-size:12px;color:var(--muted)">담당자/컨설턴트가 작성·처리하는 서류입니다</span>
+          </div>
+          <div class="checklist">
+            <label class="checkitem"><input type="checkbox" data-doc="사업신청서">
+              <div>
+                <strong>사업신청서</strong>
+                <small>📍 <b>작성처:</b> 소상공인24(소상공인24.com) 온라인 서식 — 담당자가 소상공인과 함께 작성</small>
+                <small>⚠️ 접수 기간 내 온라인 제출 필수 · 수기 제출 불가</small>
+              </div>
+              <span class="status status-warn">필수</span>
+            </label>
+            <label class="checkitem"><input type="checkbox" data-doc="사업계획서">
+              <div>
+                <strong>사업계획서</strong>
+                <small>📍 이 대시보드에서 작성한 내용을 공식 서식(소상공인24 양식)에 옮겨 완성</small>
+                <small>⚠️ 초안 생성(8번 탭) → PDF 출력 후 공식 서식에 복사 붙여넣기 권장</small>
+              </div>
+              <span class="status status-warn">필수</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="callout warn" style="font-size:12px">
+          <b>취합 순서:</b> ① 소상공인 서류 수집 → ② 담당자가 사업계획서 최종 검토 → ③ 소상공인24에서 사업신청서 제출 시 첨부 → ④ 파일당 최대 30MB 확인
         </div>
       </div>
     </section>
@@ -572,7 +652,7 @@ let state = {budgetItems:[
   {category:"AI 활용 도입",description:"",amount:0},
   {category:"제품·서비스 고도화",description:"",amount:0},
   {category:"홍보비",description:"",amount:0}
-], scores:{}, docs:[], multi:{}};
+], scores:{}, docs:[], multi:{}, totalBudget:'40000000'};
 
 const money = n => (Number(n)||0).toLocaleString("ko-KR")+"원";
 const $ = s => document.querySelector(s);
@@ -624,12 +704,12 @@ function showStep(n){
   $$(".panel").forEach((p,i)=>p.classList.toggle("active",i===currentStep));
   $$(".navbtn").forEach((b,i)=>b.classList.toggle("active",i===currentStep));
   $("#prevBtn").disabled=currentStep===0;
-  $("#nextBtn").textContent=currentStep===7?"초안 갱신":"다음 단계";
+  $("#nextBtn").textContent=currentStep===7?"📧 이메일 전송":"다음 단계";
   window.scrollTo({top:0,behavior:"smooth"});
 }
 $$(".navbtn").forEach(b=>b.addEventListener("click",()=>showStep(Number(b.dataset.step))));
 $("#prevBtn").addEventListener("click",()=>showStep(currentStep-1));
-$("#nextBtn").addEventListener("click",()=>{collectState(); if(currentStep===7)generateDraft(); else showStep(currentStep+1)});
+$("#nextBtn").addEventListener("click",()=>{collectState(); if(currentStep===7)sendAndReset(); else showStep(currentStep+1)});
 
 function updateCountdown(){
   const end=new Date("2026-07-03T16:00:00+09:00"),now=new Date(),d=end-now;
@@ -943,11 +1023,107 @@ $("#pdfBtn").addEventListener("click",()=>{
 });
 $("#docBtn").addEventListener("click",()=>{if(!requireTruth())return;const body=esc($("#draftOutput").textContent).replace(/\n/g,"<br>");download("2026_AI활용지원_사업계획서_초안.doc",`<html><meta charset="utf-8"><body style="font-family:Malgun Gothic;line-height:1.7">${body}</body></html>`,"application/msword")});
 $("#backupBtn").addEventListener("click",()=>{collectState();download("ai_support_dashboard_backup.json",JSON.stringify(state,null,2),"application/json;charset=utf-8")});
-$("#saveBtn").addEventListener("click",()=>{
+function generateTxtContent(){
+  const s=state, v=k=>(s[k]||'').trim()||'(미입력)';
+  return [
+    '=== 2026 혁신 소상공인 AI 활용지원 사업계획서 ===',
+    `작성일: ${new Date().toLocaleDateString('ko-KR')}`,
+    '',
+    '[ 기본 정보 ]',
+    `업체명: ${v('company')}`, `대표자: ${v('representative')}`,
+    `업종: ${v('industry')}`, `지역: ${v('region')}`,
+    `신청유형: ${v('applyType')}`, `이메일: ${v('email')}`,
+    '',
+    '[ AI 적용모델 ]',
+    `사업 아이템 요약: ${v('itemSummary')}`,
+    `현재 핵심 프로세스: ${v('currentProcess')}`,
+    `핵심 문제: ${v('painPoint')}`,
+    `AI 도입 필요성: ${v('aiNeed')}`,
+    `AI 적용 지점·방식: ${v('aiMethod')}`,
+    `사용 데이터: ${v('dataSources')}`,
+    `검수·통제 절차: ${v('humanReview')}`,
+    `최종 산출물: ${v('outputs')}`,
+    '',
+    '[ 성과지표(KPI) ]',
+    `KPI 1: ${v('kpi1')} / 현재 ${v('kpi1Base')} → 목표 ${v('kpi1Target')}`,
+    `KPI 2: ${v('kpi2')} / 현재 ${v('kpi2Base')} → 목표 ${v('kpi2Target')}`,
+    `KPI 3: ${v('kpi3')} / 현재 ${v('kpi3Base')} → 목표 ${v('kpi3Target')}`,
+    '',
+    '[ 시장·성장성 ]',
+    `핵심 고객: ${v('targetCustomer')}`,
+    `고객이 겪는 문제: ${v('customerProblem')}`,
+    `경쟁·대체 방식: ${v('competitors')}`,
+    `차별화 요소: ${v('differentiation')}`,
+    `사업모델 개선: ${v('bmImprovement')}`,
+    `수익모델: ${v('revenueModel')}`,
+    `시장진입·마케팅: ${v('goToMarket')}`,
+    `지속성·확장성: ${v('scalability')}`,
+    '',
+    '[ 실행계획 ]',
+    `1개월차: ${v('month1')}`,
+    `2개월차: ${v('month2')}`,
+    `3개월차: ${v('month3')}`,
+    `수행역량: ${v('capacity')}`,
+    `주요 위험과 대응: ${v('risks')}`,
+    '',
+    '[ 사업비 ]',
+    `총사업비: 40,000,000원`,
+    `정부지원금(80%): 32,000,000원`,
+    `자부담(20%): 8,000,000원`,
+    '',
+    '---',
+    '※ 이 문서는 비공식 작성지원 도구 출력물입니다. 공식 서식에 맞춰 수정 후 제출하세요.',
+  ].join('\n');
+}
+
+function clearAllFields(){
+  localStorage.removeItem(STORAGE_KEY);
+  state={budgetItems:[
+    {category:"AI 활용 도입",description:"",amount:0},
+    {category:"제품·서비스 고도화",description:"",amount:0},
+    {category:"홍보비",description:"",amount:0}
+  ],scores:{},docs:[],multi:{},totalBudget:'40000000'};
+  $$("[data-field]").forEach(el=>{
+    if(el.type==="checkbox"||el.type==="radio")el.checked=false;
+    else el.value="";
+  });
+  $$("[data-multi]").forEach(el=>el.checked=false);
+  $$("[data-doc]").forEach(el=>el.checked=false);
+  $$("[data-score]").forEach(el=>el.value=0);
+  const tb=document.querySelector('[data-field="totalBudget"]');
+  if(tb)tb.value='40000000';
+  renderBudgetRows();
+  updateAll();
+  showStep(0);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function sendAndReset(){
   collectState();
-  const empty=validateAndHighlight(false);
-  if(!empty.length)toast("저장했습니다. 모든 필수 항목이 입력됐습니다.");
-});
+  const btn=$("#nextBtn"), saveBtn=$("#saveBtn");
+  [btn,saveBtn].forEach(b=>{if(b){b.disabled=true;}});
+  if(btn)btn.textContent="전송 중…";
+  if(saveBtn)saveBtn.textContent="전송 중…";
+  try{
+    const resp=await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(state)});
+    if(resp.ok){
+      const fname=`2026_AI활용지원_${(state.company||'작성중').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.txt`;
+      download(fname,generateTxtContent(),"text/plain;charset=utf-8");
+      toast("이메일 전송 완료 — 텍스트 파일 저장 후 폼을 초기화합니다.");
+      setTimeout(()=>clearAllFields(),1800);
+    }else{
+      toast("전송 실패 — 네트워크 상태를 확인해주세요.");
+    }
+  }catch{
+    toast("전송 실패 — 오프라인 상태입니다.");
+  }finally{
+    [btn,saveBtn].forEach(b=>{if(b)b.disabled=false;});
+    if(btn)btn.textContent=currentStep===7?"📧 이메일 전송":"다음 단계";
+    if(saveBtn)saveBtn.textContent="저장";
+  }
+}
+
+$("#saveBtn").addEventListener("click",()=>sendAndReset());
 
 // 최종 전송 모달
 const _confirmModal = document.getElementById("confirmModal");
