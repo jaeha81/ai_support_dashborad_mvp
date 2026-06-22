@@ -131,6 +131,11 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 .modal-footer{display:flex;gap:10px;justify-content:center}
 .toast{position:fixed;right:24px;bottom:24px;background:#0f1f38;color:#fff;padding:12px 16px;border-radius:11px;box-shadow:0 12px 32px rgba(0,0,0,.2);opacity:0;transform:translateY(15px);pointer-events:none;transition:.22s;z-index:50}
 .toast.show{opacity:1;transform:none}
+.ai-lbl{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.ai-lbl label{flex:1;margin:0}
+.ai-btn{background:#eef2ff;color:#3b5bdb;border:1px solid #c0cfff;font-size:11px;padding:4px 10px;border-radius:8px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-weight:700;line-height:1.4;transition:.15s}
+.ai-btn:hover{background:#dce7ff}
+.ai-btn:disabled{opacity:.5;cursor:wait}
 @media(max-width:1080px){
   .shell{grid-template-columns:1fr}
   .sidebar{position:static;display:flex;overflow:auto;gap:5px}
@@ -845,6 +850,137 @@ document.addEventListener("change",e=>{if(e.target.matches("[data-field],[data-m
 updateCountdown();setInterval(updateCountdown,60000);
 restoreState();showStep(0);
 generateDraft();
+</script>
+
+<script>
+// AI 작성 도우미 — Claude.ai 구독 연동 방식
+(function() {
+  const AI_FIELDS = [
+    'itemSummary','currentProcess','painPoint','aiNeed','aiMethod',
+    'targetCustomer','customerProblem','differentiation','bmImprovement','revenueModel',
+    'month1','month2','month3','capacity','risks'
+  ];
+
+  const FIELD_META = {
+    itemSummary:     { label:'사업 아이템 한 줄 요약',      format:'한 문장 30~60자. AI를 어떤 업무에 어떻게 적용해 어떤 문제를 해결하는지 명확히.' },
+    currentProcess:  { label:'현재 핵심 업무 프로세스',      format:'"A → B → C" 형식 3~5단계, 담당자·소요시간 포함.' },
+    painPoint:       { label:'현장의 핵심 문제',              format:'수치와 사례 포함 2~4문장.' },
+    aiNeed:          { label:'AI 도입 필요성과 목표',         format:'기존 방식 한계 + AI 도입 후 변화 2~3문장.' },
+    aiMethod:        { label:'AI 적용 지점과 방식',           format:'어느 단계에 어떤 AI 기술로 무엇을 하는지 2~3문장.' },
+    targetCustomer:  { label:'핵심 고객',                     format:'고객군과 규모 1~2문장.' },
+    customerProblem: { label:'고객이 겪는 문제',              format:'구매·이용 과정의 불편과 비용 2~3문장.' },
+    differentiation: { label:'차별화 요소',                   format:'경쟁 대비 구체적 차별점 2~3개.' },
+    bmImprovement:   { label:'AI 적용 후 사업모델 개선',     format:'원가 절감·신규서비스·재구매 등 수치 포함 2~3문장.' },
+    revenueModel:    { label:'수익모델',                      format:'현재 수익 구조와 AI 도입 후 변화 1~2문장.' },
+    month1:          { label:'1개월차 실행계획',              format:'요구사항 정의·데이터 정비·설계·공급사 선정. 산출물 명시. 3~5줄.' },
+    month2:          { label:'2개월차 실행계획',              format:'개발·연계·시제품·내부테스트·교육. 산출물 명시. 3~5줄.' },
+    month3:          { label:'3개월차 실행계획',              format:'현장실증·KPI 측정·개선·상용화. 산출물 명시. 3~5줄.' },
+    capacity:        { label:'대표자·팀 수행역량',            format:'업력·현장경험·보유고객·기술협력사 중심 2~4문장.' },
+    risks:           { label:'주요 위험과 대응',              format:'위험 3가지와 대응책을 항목별로.' },
+  };
+
+  function buildPrompt(field) {
+    collectState();
+    const meta = FIELD_META[field];
+    const s = state;
+    const ctx = [
+      `업종: ${s.industry||'미입력'}`,
+      `지역: ${s.region||'미입력'}`,
+      `신청유형: ${s.applyType||'미입력'}`,
+      s.itemSummary    ? `사업 아이템: ${s.itemSummary}` : null,
+      s.currentProcess ? `현재 프로세스: ${s.currentProcess}` : null,
+      s.painPoint      ? `핵심 문제: ${s.painPoint}` : null,
+      s.aiNeed         ? `AI 도입 필요성: ${s.aiNeed}` : null,
+      s.aiMethod       ? `AI 적용방식: ${s.aiMethod}` : null,
+      s.targetCustomer ? `핵심 고객: ${s.targetCustomer}` : null,
+    ].filter(Boolean).join('\n');
+
+    return `당신은 2026 혁신 소상공인 AI 활용지원 사업 신청서 작성 보조자입니다.
+
+[규칙]
+- 사실·수치를 지어내지 마세요. 예시 수치는 [수정 필요: 실제값으로 교체] 표시를 붙이세요.
+- 필드 내용만 출력하세요. 제목·설명·안내문 없이.
+- 한국어로만 작성하세요.
+
+[신청자 현재 입력값]
+${ctx}
+
+[요청]
+필드: ${meta.label}
+형식: ${meta.format}
+
+"${meta.label}" 내용만 작성하세요.`;
+  }
+
+  // 프롬프트 모달 생성
+  function createModal() {
+    if (document.getElementById('aiPromptModal')) return;
+    const el = document.createElement('div');
+    el.id = 'aiPromptModal';
+    el.className = 'modal-overlay hidden';
+    el.innerHTML = `
+      <div class="modal" style="max-width:540px;text-align:left">
+        <div class="modal-icon">✦</div>
+        <div class="modal-title" id="aiModalTitle">AI 작성 프롬프트</div>
+        <p style="font-size:12px;color:#667085;margin:0 0 10px">아래 프롬프트를 복사해 Claude.ai에 붙여넣으세요.</p>
+        <textarea id="aiPromptText" readonly style="width:100%;min-height:180px;font-size:12px;border:1px solid #e3e8f0;border-radius:10px;padding:10px;resize:vertical;background:#f8fafc;font-family:monospace"></textarea>
+        <div class="modal-footer" style="margin-top:14px;flex-wrap:wrap;gap:8px">
+          <button class="btn btn-primary btn-sm" id="aiCopyBtn">복사</button>
+          <a class="btn btn-secondary btn-sm" href="https://claude.ai" target="_blank" id="aiOpenBtn">Claude.ai 열기</a>
+          <button class="btn btn-ghost btn-sm" id="aiCloseBtn">닫기</button>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+    document.getElementById('aiCopyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(document.getElementById('aiPromptText').value);
+        document.getElementById('aiCopyBtn').textContent = '복사됨 ✓';
+        setTimeout(() => document.getElementById('aiCopyBtn').textContent = '복사', 1800);
+      } catch { toast('복사 실패'); }
+    });
+    document.getElementById('aiCloseBtn').addEventListener('click', () => el.classList.add('hidden'));
+    el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+  }
+
+  function openModal(field) {
+    createModal();
+    const meta = FIELD_META[field];
+    document.getElementById('aiModalTitle').textContent = `AI 작성 — ${meta.label}`;
+    document.getElementById('aiPromptText').value = buildPrompt(field);
+    document.getElementById('aiPromptModal').classList.remove('hidden');
+  }
+
+  function addButtons() {
+    AI_FIELDS.forEach(field => {
+      const el = document.querySelector(`[data-field="${field}"]`);
+      if (!el) return;
+      const fieldDiv = el.closest('.field');
+      if (!fieldDiv) return;
+      const label = fieldDiv.querySelector('label');
+      if (!label || label.parentElement.classList.contains('ai-lbl')) return;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'ai-lbl';
+      label.parentNode.insertBefore(wrapper, label);
+      wrapper.appendChild(label);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn ai-btn';
+      btn.dataset.assist = field;
+      btn.textContent = '✦ AI 작성';
+      wrapper.appendChild(btn);
+    });
+    createModal();
+  }
+
+  document.addEventListener('click', e => {
+    if (e.target.matches('[data-assist]')) openModal(e.target.dataset.assist);
+  });
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addButtons);
+  else addButtons();
+})();
 </script>
 
 <script>
