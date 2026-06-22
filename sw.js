@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ai-support-2026-v1';
+const CACHE_NAME = 'ai-support-2026-v2';
 const SHELL = './2026_ai_support_dashboard_mvp.html';
 
 self.addEventListener('install', event => {
