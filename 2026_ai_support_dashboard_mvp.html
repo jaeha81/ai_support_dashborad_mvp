@@ -76,6 +76,9 @@ input[type=text],input[type=number],input[type=date],input[type=email],select,te
 }
 input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,99,255,.10)}
 textarea{min-height:120px;resize:vertical}
+.field-error>label{color:var(--danger)!important}
+.field-error>input,.field-error>select,.field-error>textarea{border-color:var(--danger)!important;background:#fff8f8!important;box-shadow:0 0 0 3px rgba(197,59,59,.10)!important}
+.field-error .choice-row{border:2px solid var(--danger);border-radius:12px;padding:8px 6px;background:#fff8f8}
 .choice-row{display:flex;flex-wrap:wrap;gap:9px}
 .choice{border:1px solid #d8deea;border-radius:999px;padding:8px 11px;background:#fff;cursor:pointer;font-size:12px}
 .choice input{margin-right:5px}
@@ -169,6 +172,7 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
   .draft{border:0;padding:0;font-size:11pt}
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -183,6 +187,7 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
     <div class="header-actions">
       <span class="badge">마감 <b id="countdown">계산 중</b></span>
       <button class="btn btn-ghost btn-sm hidden" id="installBtn">앱 설치</button>
+      <button class="btn btn-ghost btn-sm" id="buckyExportBtn" title="작성 데이터를 Bucky 에이전트용 JSON으로 내보냅니다">📦 Bucky 내보내기</button>
       <button class="btn btn-ghost btn-sm" id="saveBtn">저장</button>
       <button class="btn btn-ghost btn-sm" id="backupBtn">백업</button>
       <button class="btn btn-primary btn-sm" id="finalSendBtn">최종 전송</button>
@@ -293,6 +298,18 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
           </div>
         </div>
       </div>
+
+      <!-- AI 맞춤 설계 진입 카드 -->
+      <div class="idea-card" style="border-color:#9ec8b9;background:linear-gradient(135deg,#f0faf7,#eef5ff);margin-top:4px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+          <div>
+            <span class="idea-tag" style="background:#138a62">AI 맞춤 설계</span>
+            <h3 style="margin:8px 0 4px;color:#0a3d28">기본정보를 바탕으로 3~5패널 전체를 AI가 작성합니다</h3>
+            <p class="sub" style="margin:0">업종·지역·신청유형과 업무 현황을 기반으로 AI 적용모델·시장성·실행계획 <b>28개 필드</b>를 한 번에 채워드립니다. 작성 후 반드시 사실에 맞게 수정하세요.</p>
+          </div>
+          <button class="btn btn-primary" id="designGenBtn" style="flex-shrink:0;white-space:nowrap;background:#138a62;box-shadow:0 8px 18px rgba(19,138,98,.22)">🎯 AI 맞춤 설계 시작</button>
+        </div>
+      </div>
     </section>
 
     <!-- 3. AI 적용모델 -->
@@ -358,7 +375,10 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
         </div>
       </div>
       <div class="card">
-        <h3>성과지표(KPI)</h3><p class="sub">‘좋아진다’보다 시간·비용·전환율·오류율처럼 측정 가능한 지표를 사용합니다.</p>
+        <div class="section-title" style="margin-bottom:10px">
+          <div><h3 style="margin:0 0 4px">성과지표(KPI)</h3><p class="sub" style="margin:0">’좋아진다’보다 시간·비용·전환율·오류율처럼 측정 가능한 지표를 사용합니다.</p></div>
+          <button class="btn btn-secondary btn-sm" id="kpiGuideBtn">💡 업종별 KPI 추천</button>
+        </div>
         <div class="grid-3">
           <div class="field"><label>KPI 1</label><input type="text" data-field="kpi1" placeholder="예: 견적 작성시간"></div>
           <div class="field"><label>현재값</label><input type="text" data-field="kpi1Base" placeholder="예: 건당 4시간"></div>
@@ -489,7 +509,8 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
             <button class="btn btn-secondary btn-sm" id="copyBtn">복사</button>
             <button class="btn btn-secondary btn-sm" id="docBtn">Word용 다운로드</button>
             <button class="btn btn-secondary btn-sm" id="txtBtn">TXT 다운로드</button>
-            <button class="btn btn-secondary btn-sm" onclick="window.print()">인쇄/PDF</button>
+            <button class="btn btn-secondary btn-sm" onclick="window.print()">인쇄</button>
+            <button class="btn btn-primary btn-sm" id="pdfBtn">PDF 저장</button>
           </div>
         </div>
         <label class="choice no-print" style="margin-bottom:14px;display:inline-block"><input type="checkbox" id="truthConfirm"> 모든 내용은 신청자가 제공한 사실이며 대표자가 직접 검토·수정합니다.</label>
@@ -687,6 +708,45 @@ function updateProgress(){
 }
 function updateAll(){updateEligibility();updateBudget();updateScores();updateDocs();updateProgress()}
 
+const REQUIRED_FIELDS=[
+  {key:'company',label:'업체명',step:1},
+  {key:'representative',label:'대표자 성명',step:1},
+  {key:'industry',label:'업종',step:1},
+  {key:'region',label:'지역',step:1},
+  {key:'applyType',label:'신청유형',step:1},
+  {key:'itemSummary',label:'사업 아이템 요약',step:2},
+  {key:'currentProcess',label:'현재 업무 프로세스',step:2},
+  {key:'painPoint',label:'핵심 문제',step:2},
+  {key:'aiNeed',label:'AI 도입 필요성',step:2},
+  {key:'aiMethod',label:'AI 적용 방식',step:2},
+  {key:'targetCustomer',label:'핵심 고객',step:4},
+  {key:'customerProblem',label:'고객 문제',step:4},
+  {key:'differentiation',label:'차별화 요소',step:4},
+  {key:'bmImprovement',label:'BM 개선',step:4},
+  {key:'month1',label:'1개월차 실행계획',step:5},
+  {key:'month2',label:'2개월차 실행계획',step:5},
+  {key:'month3',label:'3개월차 실행계획',step:5},
+  {key:'capacity',label:'수행역량',step:5},
+  {key:'totalBudget',label:'총사업비',step:6},
+];
+function validateAndHighlight(navigate){
+  collectState();
+  $$('.field-error').forEach(el=>el.classList.remove('field-error'));
+  const empty=REQUIRED_FIELDS.filter(f=>!String(state[f.key]||'').trim());
+  empty.forEach(f=>{
+    const el=$(`[data-field="${f.key}"]`);
+    if(el){const fd=el.closest('.field');if(fd)fd.classList.add('field-error');}
+  });
+  if(!empty.length)return[];
+  if(navigate){
+    showStep(empty[0].step);
+    setTimeout(()=>{const fd=$('.field-error');if(fd)fd.scrollIntoView({behavior:'smooth',block:'center'});},300);
+  }
+  const labels=empty.slice(0,3).map(f=>f.label).join(', ')+(empty.length>3?` 외 ${empty.length-3}개`:'');
+  toast(`미입력 ${empty.length}개 — ${labels}`);
+  return empty;
+}
+
 function buildPrompt(){
   return `당신은 정부지원사업 사업계획서 편집 보조자입니다.
 아래 신청자 입력 사실만 사용하고, 사실·수치·실적·고객·기술을 새로 만들어내지 마세요.
@@ -840,9 +900,54 @@ function download(name,content,type){
   const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200)
 }
 $("#txtBtn").addEventListener("click",()=>{if(requireTruth())download("2026_AI활용지원_사업계획서_초안.txt",$("#draftOutput").textContent,"text/plain;charset=utf-8")});
+$("#pdfBtn").addEventListener("click",()=>{
+  if(typeof html2pdf==="undefined"){toast("PDF 라이브러리 로딩 중입니다. 잠시 후 다시 시도하세요.");return;}
+  if(!requireTruth())return;
+  const draftText=$("#draftOutput").textContent;
+  if(draftText==="아직 초안이 생성되지 않았습니다."){toast("먼저 초안을 생성해 주세요.");return;}
+  collectState();
+  const company=esc(state.company||"작성중");
+  const now=new Date().toLocaleDateString("ko-KR");
+  const htmlLines=draftText.split("\n").map(line=>{
+    if(!line.trim())return"<div style='height:6px'></div>";
+    if(/^\d+\./.test(line))return`<div style='font-size:11.5pt;font-weight:900;color:#0b1f3a;margin:14px 0 4px;border-bottom:1px solid #d6dce6;padding-bottom:3px'>${esc(line)}</div>`;
+    if(/^[가나다라마바사]\./.test(line))return`<div style='font-size:10.5pt;font-weight:700;color:#2f63ff;margin:8px 0 3px'>${esc(line)}</div>`;
+    if(line.startsWith("- ")||line.startsWith("※")||line.startsWith("·"))return`<div style='padding-left:12px;color:#344054'>${esc(line)}</div>`;
+    return`<div>${esc(line)}</div>`;
+  }).join("");
+  const el=document.createElement("div");
+  el.innerHTML=`<div style="font-family:'Malgun Gothic',system-ui,sans-serif;font-size:10pt;line-height:1.75;color:#172033;padding:4mm 0">
+    <div style="text-align:center;border-bottom:3px solid #0b1f3a;padding-bottom:14px;margin-bottom:18px">
+      <div style="font-size:8.5pt;color:#667085;letter-spacing:.06em">2026년도</div>
+      <div style="font-size:17pt;font-weight:900;color:#0b1f3a;margin:5px 0 4px">혁신 소상공인 AI 활용지원 사업</div>
+      <div style="font-size:12pt;font-weight:700;color:#172033">사업계획서 작성 초안</div>
+      <div style="margin-top:10px;font-size:8.5pt;color:#667085">업체명: ${company}&nbsp;&nbsp;|&nbsp;&nbsp;작성일: ${now}</div>
+    </div>
+    <div style="font-size:8.5pt;background:#fff8e9;border:1px solid #f7dfab;border-radius:5px;padding:7px 10px;margin-bottom:16px;color:#72531b">
+      ※ 본 초안은 신청자가 입력한 사실을 구조화한 문서입니다. 공식 서식에 맞춰 대표자가 직접 검토·수정해야 합니다.
+    </div>
+    ${htmlLines}
+    <div style="margin-top:24px;border-top:1px solid #e3e8f0;padding-top:10px;font-size:8pt;color:#667085;text-align:center">
+      이 문서는 비공식 작성지원 도구 출력물입니다 · 최종 제출 전 공식 공고문을 반드시 확인하세요
+    </div>
+  </div>`;
+  toast("PDF 생성 중…");
+  html2pdf().set({
+    margin:[14,14,18,14],
+    filename:`2026_AI활용지원_사업계획서_초안_${state.company||"작성중"}.pdf`,
+    image:{type:"jpeg",quality:0.97},
+    html2canvas:{scale:2,useCORS:true,logging:false},
+    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+    pagebreak:{mode:["css","legacy"]}
+  }).from(el).save().then(()=>toast("PDF가 저장됐습니다.")).catch(()=>toast("PDF 생성 실패 — 브라우저 설정을 확인해 주세요."));
+});
 $("#docBtn").addEventListener("click",()=>{if(!requireTruth())return;const body=esc($("#draftOutput").textContent).replace(/\n/g,"<br>");download("2026_AI활용지원_사업계획서_초안.doc",`<html><meta charset="utf-8"><body style="font-family:Malgun Gothic;line-height:1.7">${body}</body></html>`,"application/msword")});
 $("#backupBtn").addEventListener("click",()=>{collectState();download("ai_support_dashboard_backup.json",JSON.stringify(state,null,2),"application/json;charset=utf-8")});
-$("#saveBtn").addEventListener("click",()=>{collectState();toast("현재 브라우저에 저장했습니다.")});
+$("#saveBtn").addEventListener("click",()=>{
+  collectState();
+  const empty=validateAndHighlight(false);
+  if(!empty.length)toast("저장했습니다. 모든 필수 항목이 입력됐습니다.");
+});
 
 // 최종 전송 모달
 const _confirmModal = document.getElementById("confirmModal");
@@ -850,6 +955,7 @@ const _successModal = document.getElementById("successModal");
 
 document.getElementById("finalSendBtn").addEventListener("click",()=>{
   collectState();
+  validateAndHighlight(true);
   _confirmModal.classList.remove("hidden");
 });
 document.getElementById("modalBackBtn").addEventListener("click",()=>{
@@ -887,8 +993,14 @@ _successModal.addEventListener("click", e=>{
   if(e.target===_successModal) _successModal.classList.add("hidden");
 });
 
-document.addEventListener("input",e=>{if(e.target.matches("[data-field],[data-multi],[data-doc],[data-score]"))collectState()});
-document.addEventListener("change",e=>{if(e.target.matches("[data-field],[data-multi],[data-doc],[data-score]"))collectState()});
+document.addEventListener("input",e=>{
+  if(e.target.matches("[data-field],[data-multi],[data-doc],[data-score]"))collectState();
+  if(e.target.matches("[data-field]")&&String(e.target.value||"").trim()){const fd=e.target.closest(".field");if(fd)fd.classList.remove("field-error");}
+});
+document.addEventListener("change",e=>{
+  if(e.target.matches("[data-field],[data-multi],[data-doc],[data-score]"))collectState();
+  if(e.target.matches("[data-field]")&&(String(e.target.value||"").trim()||e.target.type==="radio")){const fd=e.target.closest(".field");if(fd)fd.classList.remove("field-error");}
+});
 updateCountdown();setInterval(updateCountdown,60000);
 restoreState();showStep(0);
 generateDraft();
@@ -1170,6 +1282,422 @@ ${info}
   document.addEventListener('click', e => {
     if (e.target.id === 'ideaGenBtn') openIdeaModal();
   });
+})();
+</script>
+
+<script>
+// AI 맞춤 설계 — 패널 3~5 전체 28개 필드 자동 생성
+(function(){
+  const DESIGN_FIELDS = [
+    'itemSummary','currentProcess','painPoint','aiNeed','aiMethod',
+    'dataSources','humanReview','outputs',
+    'targetCustomer','customerProblem','competitors','differentiation',
+    'bmImprovement','revenueModel','goToMarket','scalability',
+    'month1','month2','month3','capacity','risks',
+    'kpi1','kpi1Base','kpi1Target',
+    'kpi2','kpi2Base','kpi2Target',
+    'kpi3','kpi3Base','kpi3Target'
+  ];
+
+  function buildDesignPrompt(){
+    collectState();
+    const s=state;
+    const tools=(s.multi?.aiTools||[]).join(', ')||'미입력';
+    const ctx=[
+      `업체명: ${s.company||'미입력'}`,
+      `업종: ${s.industry||'미입력'}`,
+      `지역: ${s.region||'미입력'}`,
+      `신청유형: ${s.applyType||'미입력'}`,
+      `현재 활용 AI: ${tools}`,
+      s.bizDaily         ?`하루 업무 흐름: ${s.bizDaily}`:null,
+      s.bizRepeat        ?`반복 귀찮은 업무: ${s.bizRepeat}`:null,
+      s.bizTimeConsume   ?`시간 많이 걸리는 일: ${s.bizTimeConsume}`:null,
+      s.bizCustomerIssue ?`고객 응대 어려움: ${s.bizCustomerIssue}`:null,
+      s.bizMistake       ?`자주 나는 실수: ${s.bizMistake}`:null,
+      s.bizGoal          ?`해결하고 싶은 고민: ${s.bizGoal}`:null,
+    ].filter(Boolean).join('\n');
+
+    return `당신은 중소벤처기업부 "2026 혁신 소상공인 AI 활용지원 사업" 전문 컨설턴트입니다.
+아래 소상공인 기본 정보를 바탕으로 사업계획서 핵심 내용을 작성해주세요.
+정부지원금 최대 3,200만원(총사업비의 80%) 선정을 목표로 합니다.
+
+[소상공인 기본 정보]
+${ctx}
+
+[심사 평가 기준 — 이 6가지 기준으로 점수가 매겨집니다]
+1. AI 활용 전략의 명확성 및 도입 필요성
+2. 사업 운영 프로세스 내 AI 적용 가능성 및 적합성
+3. AI 적용을 통한 사업모델 개선 가능성
+4. 시장성·경쟁력 및 지속 성장 가능성
+5. 사업 참여 의지 및 수행역량
+6. 사업계획의 구체성 및 실행가능성
+
+[작성 규칙]
+- 소상공인이 실제로 구현 가능한 수준으로 구체적으로 작성하세요
+- 수치나 사실을 모를 때는 [신청자 확인 필요]로 표시하세요
+- 허위·과장 금지. 심사관이 납득할 수 있는 근거 중심으로 작성하세요
+- AI 구독 구매가 목적이 아니라 업무 효율화·사업모델 개선이 목적임을 중심에 두세요
+- 반드시 아래 JSON 코드 블록 형식으로만 출력하세요. 다른 설명을 추가하지 마세요.
+
+\`\`\`json
+{
+  "itemSummary": "AI를 어떤 업무에 어떻게 적용해 어떤 문제를 해결하는지 한 문장 30~60자",
+  "currentProcess": "현재 핵심 업무 프로세스를 A→B→C 형식 3~5단계, 담당자·소요시간 포함",
+  "painPoint": "현장의 핵심 문제와 손실을 수치 포함 2~4문장",
+  "aiNeed": "기존 방식 한계 + AI 도입 후 무엇이 달라지는지 2~3문장",
+  "aiMethod": "AI를 어느 단계에 어떤 방식으로 적용하는지 구체적으로 2~3문장",
+  "dataSources": "AI 학습·운영에 사용할 데이터 종류 (예: 주문기록, 고객문의 이력, 재고현황)",
+  "humanReview": "AI 결과를 사람이 어떻게 검수하고 최종 판단하는지",
+  "outputs": "AI 도입 후 실제 산출물 (예: 자동 견적서, 맞춤 상품 추천 리스트)",
+  "targetCustomer": "핵심 고객군과 규모 1~2문장",
+  "customerProblem": "고객이 구매·이용 과정에서 겪는 불편 2~3문장",
+  "competitors": "현재 경쟁 방식 또는 대체 수단",
+  "differentiation": "AI 도입 후 경쟁 대비 구체적 차별점 2~3가지",
+  "bmImprovement": "AI 적용 후 원가 절감·신규서비스·재구매 개선을 수치 포함 2~3문장",
+  "revenueModel": "현재 수익 구조와 AI 도입 후 변화 1~2문장",
+  "goToMarket": "시장 진입 방법 및 마케팅 계획",
+  "scalability": "3개월 이후 지속성과 확장 가능성",
+  "month1": "1개월차: 요구사항 정의·데이터 정비·설계·공급사 선정. 산출물 명시. 3~5줄",
+  "month2": "2개월차: 개발·연계·시제품·내부테스트·교육. 산출물 명시. 3~5줄",
+  "month3": "3개월차: 현장실증·KPI 측정·개선·상용화. 산출물 명시. 3~5줄",
+  "capacity": "대표자 업력·현장경험·보유고객·기술협력사 중심 2~4문장",
+  "risks": "주요 위험 3가지와 각 대응책을 항목별로",
+  "kpi1": "AI 도입으로 가장 크게 줄어드는 시간/비용/오류 지표 이름 (예: 견적 작성 시간, 주문 처리 시간, 발주 오류율)",
+  "kpi1Base": "현재 실제 수치 (예: 건당 3시간, 월 12건, 15%). 모를 경우 [신청자 확인 필요]",
+  "kpi1Target": "3개월 후 현실적 목표 수치 (예: 건당 30분, 월 2건, 3%). 50~80% 개선이 일반적",
+  "kpi2": "매출·고객·품질 관련 두 번째 지표 이름 (예: 재방문율, 상담→계약 전환율, 불량률)",
+  "kpi2Base": "현재 실제 수치. 모를 경우 [신청자 확인 필요]",
+  "kpi2Target": "3개월 후 현실적 목표 수치",
+  "kpi3": "업무량·생산성 관련 세 번째 지표 이름 (예: 일 처리 건수, 보고서 작성 시간, 재고 파악 시간)",
+  "kpi3Base": "현재 실제 수치. 모를 경우 [신청자 확인 필요]",
+  "kpi3Target": "3개월 후 현실적 목표 수치"
+}
+\`\`\``;
+  }
+
+  function parseDesignResult(text){
+    const block=text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const jsonStr=block?block[1].trim():text.trim();
+    try{
+      const obj=JSON.parse(jsonStr);
+      const result={};
+      DESIGN_FIELDS.forEach(k=>{if(typeof obj[k]==='string')result[k]=obj[k];});
+      return result;
+    }catch(e){return {};}
+  }
+
+  function createDesignModal(){
+    if(document.getElementById('designModal'))return;
+    const el=document.createElement('div');
+    el.id='designModal';
+    el.className='modal-overlay hidden';
+    el.style.position='fixed';
+    el.innerHTML=`
+      <div class="modal" style="max-width:620px;text-align:left">
+        <div class="modal-icon">🎯</div>
+        <div class="modal-title">AI 맞춤 설계</div>
+        <p style="font-size:13px;color:#667085;margin:0 0 16px">AI 적용모델·시장성·실행계획 <b>28개 필드</b>를 기본정보 기반으로 자동 작성합니다.</p>
+
+        <div class="idea-step active" id="designStep1">
+          <div class="idea-tag" style="background:#138a62">STEP 1 — 프롬프트 복사</div>
+          <p style="font-size:13px;color:#344054;margin:8px 0 10px">아래 프롬프트를 복사해 <b>Claude.ai</b>에 붙여넣으세요. JSON 형식으로 응답이 옵니다.</p>
+          <textarea id="designPromptText" readonly style="width:100%;min-height:220px;font-size:11.5px;border:1px solid #e3e8f0;border-radius:10px;padding:10px;resize:vertical;background:#f8fafc;font-family:monospace;line-height:1.5"></textarea>
+          <div class="modal-footer" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+            <button class="btn btn-primary btn-sm" id="designCopyBtn" style="background:#138a62">프롬프트 복사</button>
+            <a class="btn btn-secondary btn-sm" href="https://claude.ai" target="_blank">Claude.ai 열기</a>
+            <button class="btn btn-ghost btn-sm" id="designNextBtn">결과 붙여넣기 →</button>
+          </div>
+        </div>
+
+        <div class="idea-step" id="designStep2">
+          <div class="idea-tag" style="background:#138a62">STEP 2 — 자동 채우기</div>
+          <p style="font-size:13px;color:#344054;margin:8px 0 10px">Claude.ai 응답 전체를 아래에 붙여넣고 <b>자동 채우기</b>를 누르세요.</p>
+          <textarea id="designResultText" style="width:100%;min-height:220px;font-size:11.5px;border:1px solid #e3e8f0;border-radius:10px;padding:10px;resize:vertical;background:#fff;line-height:1.5" placeholder='Claude.ai 응답(JSON 코드 블록 포함)을 여기에 붙여넣으세요...'></textarea>
+          <div class="callout warn" style="font-size:12px;margin-top:10px">AI 초안입니다. <b>반드시 실제 사실에 맞게 수정하세요.</b> 허위 내용 그대로 제출 시 선정 취소될 수 있습니다.</div>
+          <div id="designFillResult" style="display:none;font-size:12px;margin-top:8px;padding:8px 12px;background:#eefaf6;border:1px solid #bfe6d6;border-radius:8px;color:#176c51"></div>
+          <div class="modal-footer" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+            <button class="btn btn-ghost btn-sm" id="designBackBtn">← 프롬프트로</button>
+            <button class="btn btn-primary btn-sm" id="designApplyBtn" style="background:#138a62">✅ 28개 필드 자동 채우기</button>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost btn-sm" id="designCloseBtn" style="position:absolute;top:18px;right:18px;padding:4px 10px">✕</button>
+      </div>`;
+    document.body.appendChild(el);
+
+    document.getElementById('designCopyBtn').addEventListener('click',async()=>{
+      try{
+        await navigator.clipboard.writeText(document.getElementById('designPromptText').value);
+        document.getElementById('designCopyBtn').textContent='복사됨 ✓';
+        setTimeout(()=>document.getElementById('designCopyBtn').textContent='프롬프트 복사',1800);
+      }catch{toast('복사 실패');}
+    });
+    document.getElementById('designNextBtn').addEventListener('click',()=>{
+      document.getElementById('designStep1').classList.remove('active');
+      document.getElementById('designStep2').classList.add('active');
+    });
+    document.getElementById('designBackBtn').addEventListener('click',()=>{
+      document.getElementById('designStep2').classList.remove('active');
+      document.getElementById('designStep1').classList.add('active');
+    });
+    document.getElementById('designApplyBtn').addEventListener('click',()=>{
+      const text=document.getElementById('designResultText').value.trim();
+      if(!text){toast('Claude.ai 응답을 먼저 붙여넣으세요.');return;}
+      const parsed=parseDesignResult(text);
+      const count=Object.keys(parsed).length;
+      if(count===0){
+        toast('JSON 형식을 인식하지 못했습니다. Claude.ai 응답 전체(코드 블록 포함)를 붙여넣으세요.');
+        return;
+      }
+      Object.entries(parsed).forEach(([field,val])=>{
+        const el=document.querySelector(`[data-field="${field}"]`);
+        if(el){el.value=val;el.dispatchEvent(new Event('input',{bubbles:true}));}
+      });
+      collectState();
+      const resultEl=document.getElementById('designFillResult');
+      resultEl.style.display='block';
+      resultEl.textContent=`${count}개 필드가 채워졌습니다. 3번 패널부터 순서대로 확인하고 실제 정보로 수정하세요.`;
+      toast(`${count}개 필드 자동 채우기 완료 — 실제 정보로 수정하세요.`);
+      setTimeout(()=>{
+        document.getElementById('designModal').classList.add('hidden');
+        showStep(2);
+      },2000);
+    });
+    document.getElementById('designCloseBtn').addEventListener('click',()=>el.classList.add('hidden'));
+    el.addEventListener('click',e=>{if(e.target===el)el.classList.add('hidden');});
+  }
+
+  function openDesignModal(){
+    createDesignModal();
+    document.getElementById('designPromptText').value=buildDesignPrompt();
+    document.getElementById('designResultText').value='';
+    document.getElementById('designFillResult').style.display='none';
+    document.getElementById('designStep1').classList.add('active');
+    document.getElementById('designStep2').classList.remove('active');
+    document.getElementById('designModal').classList.remove('hidden');
+  }
+
+  document.addEventListener('click',e=>{
+    if(e.target.id==='designGenBtn'||e.target.closest('#designGenBtn'))openDesignModal();
+  });
+})();
+</script>
+
+<script>
+// ── P0: Bucky 패킷 내보내기 ──────────────────────────────────────
+document.getElementById('buckyExportBtn').addEventListener('click', () => {
+  collectState();
+  const s = state;
+  const pack = {
+    meta: {
+      project: "2026 혁신 소상공인 AI 활용지원 사업계획서",
+      exported_at: new Date().toISOString(),
+      completion_pct: document.getElementById('progressText').textContent,
+      tool: "AI 활용지원 템플릿 빌더 MVP"
+    },
+    company_profile: {
+      company: s.company || "", representative: s.representative || "",
+      industry: s.industry || "", region: s.region || "",
+      applyType: s.applyType || "", email: s.email || ""
+    },
+    ai_model: {
+      itemSummary: s.itemSummary || "", currentProcess: s.currentProcess || "",
+      painPoint: s.painPoint || "", aiNeed: s.aiNeed || "",
+      aiMethod: s.aiMethod || "", dataSources: s.dataSources || "",
+      humanReview: s.humanReview || "", outputs: s.outputs || ""
+    },
+    market: {
+      targetCustomer: s.targetCustomer || "", customerProblem: s.customerProblem || "",
+      competitors: s.competitors || "", differentiation: s.differentiation || "",
+      bmImprovement: s.bmImprovement || "", revenueModel: s.revenueModel || "",
+      goToMarket: s.goToMarket || "", scalability: s.scalability || ""
+    },
+    execution: {
+      month1: s.month1 || "", month2: s.month2 || "", month3: s.month3 || "",
+      capacity: s.capacity || "", risks: s.risks || "", totalBudget: s.totalBudget || ""
+    },
+    kpis: [
+      { name: s.kpi1 || "", baseline: s.kpi1Base || "", target: s.kpi1Target || "" },
+      { name: s.kpi2 || "", baseline: s.kpi2Base || "", target: s.kpi2Target || "" },
+      { name: s.kpi3 || "", baseline: s.kpi3Base || "", target: s.kpi3Target || "" }
+    ],
+    biz_context: {
+      bizDaily: s.bizDaily || "", bizRepeat: s.bizRepeat || "",
+      bizTimeConsume: s.bizTimeConsume || "", bizCustomerIssue: s.bizCustomerIssue || "",
+      bizMistake: s.bizMistake || "", bizGoal: s.bizGoal || ""
+    }
+  };
+  const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bucky_packet_${(s.company || 'draft').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Bucky 패킷 내보내기 완료 — JSON 파일을 Bucky에게 전달하세요.');
+});
+</script>
+
+<script>
+// ── P1: KPI 업종별 추천 도우미 ────────────────────────────────────
+(function(){
+  const PRESETS = [
+    {
+      label: '음식점·카페·제과',
+      keywords: ['음식','식당','카페','제과','베이커리','분식','치킨','피자','한식','중식','일식','이탈'],
+      kpis: [
+        { k:'주문 처리 시간', b:'건당 8분', t:'건당 2분' },
+        { k:'식재료 폐기율', b:'월 12%', t:'월 4%' },
+        { k:'재방문 고객 비율', b:'22%', t:'38%' }
+      ]
+    },
+    {
+      label: '소매·유통·쇼핑몰',
+      keywords: ['소매','유통','쇼핑','마트','편의','잡화','의류','패션','온라인','스마트스토어'],
+      kpis: [
+        { k:'발주 처리 시간', b:'건당 90분', t:'건당 15분' },
+        { k:'품절 발생 횟수', b:'월 18회', t:'월 3회' },
+        { k:'재고 파악 소요 시간', b:'주 3시간', t:'주 20분' }
+      ]
+    },
+    {
+      label: '건설·인테리어·설비',
+      keywords: ['건설','인테리어','설비','공사','시공','건축','전기','배관','도배','철거'],
+      kpis: [
+        { k:'견적 작성 시간', b:'건당 4시간', t:'건당 30분' },
+        { k:'견적 오류·누락률', b:'8%', t:'1%' },
+        { k:'현장 보고서 작성 시간', b:'건당 2시간', t:'건당 15분' }
+      ]
+    },
+    {
+      label: '미용·뷰티·건강',
+      keywords: ['미용','뷰티','헤어','네일','피부','마사지','헬스','요가','필라테스','의원','한의'],
+      kpis: [
+        { k:'예약 노쇼율', b:'18%', t:'5%' },
+        { k:'신규→재예약 전환율', b:'30%', t:'55%' },
+        { k:'고객 상담 소요 시간', b:'건당 20분', t:'건당 7분' }
+      ]
+    },
+    {
+      label: '학원·교육·코칭',
+      keywords: ['학원','교육','코칭','과외','강습','컨설팅','훈련','어학','수학','영어','음악'],
+      kpis: [
+        { k:'수강생 유지율(3개월)', b:'62%', t:'82%' },
+        { k:'학습 계획 작성 시간', b:'학생당 40분', t:'학생당 5분' },
+        { k:'상담→등록 전환율', b:'25%', t:'45%' }
+      ]
+    },
+    {
+      label: '서비스업(법무·세무·디자인 등)',
+      keywords: ['서비스','법무','세무','회계','디자인','광고','마케팅','번역','사진','청소','경비'],
+      kpis: [
+        { k:'상담→계약 전환율', b:'18%', t:'32%' },
+        { k:'제안서·보고서 작성 시간', b:'건당 5시간', t:'건당 40분' },
+        { k:'고객 재계약률', b:'40%', t:'62%' }
+      ]
+    },
+    {
+      label: '제조·가공',
+      keywords: ['제조','가공','공장','생산','제품','포장','조립','금속','화학','식품가공'],
+      kpis: [
+        { k:'불량 발생률', b:'4.5%', t:'0.8%' },
+        { k:'생산 일지 작성 시간', b:'일 45분', t:'일 5분' },
+        { k:'납기 준수율', b:'78%', t:'95%' }
+      ]
+    }
+  ];
+
+  const DEFAULT_PRESET = {
+    label: '일반 소상공인',
+    kpis: [
+      { k:'반복 업무 처리 시간', b:'건당 2시간', t:'건당 20분' },
+      { k:'고객 문의 응답 시간', b:'평균 4시간', t:'평균 30분' },
+      { k:'문서·보고서 작성 시간', b:'건당 3시간', t:'건당 20분' }
+    ]
+  };
+
+  function detectPresets(industry) {
+    if (!industry) return [];
+    const lower = industry.toLowerCase();
+    return PRESETS.filter(p => p.keywords.some(kw => lower.includes(kw)));
+  }
+
+  function fillKpi(kpis) {
+    const fields = ['kpi1','kpi2','kpi3'];
+    kpis.forEach((kpi, i) => {
+      const fk = document.querySelector(`[data-field="${fields[i]}"]`);
+      const fb = document.querySelector(`[data-field="${fields[i]}Base"]`);
+      const ft = document.querySelector(`[data-field="${fields[i]}Target"]`);
+      if (fk) { fk.value = kpi.k; fk.dispatchEvent(new Event('input',{bubbles:true})); }
+      if (fb) { fb.value = kpi.b; fb.dispatchEvent(new Event('input',{bubbles:true})); }
+      if (ft) { ft.value = kpi.t; ft.dispatchEvent(new Event('input',{bubbles:true})); }
+    });
+    collectState();
+  }
+
+  function renderModal(matched) {
+    const all = matched.length ? matched : [DEFAULT_PRESET];
+    const cards = all.map((p, idx) => `
+      <div style="border:1px solid #e3e8f0;border-radius:14px;padding:16px;background:#f8fafc;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <b style="font-size:14px;color:#172033">${p.label}</b>
+          <button class="btn btn-primary btn-sm kpi-apply-btn" data-idx="${idx}" style="font-size:11px;padding:5px 10px">이 KPI 적용</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          ${p.kpis.map(kpi => `
+            <div style="background:#fff;border:1px solid #dfe8ff;border-radius:10px;padding:10px">
+              <div style="font-size:12px;font-weight:700;color:#2f63ff;margin-bottom:4px">${kpi.k}</div>
+              <div style="font-size:11px;color:#667085">현재: <b>${kpi.b}</b></div>
+              <div style="font-size:11px;color:#138a62">목표: <b>${kpi.t}</b></div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+
+    return `
+      <div class="modal" style="max-width:640px;text-align:left">
+        <div class="modal-icon">💡</div>
+        <div class="modal-title">업종별 KPI 추천</div>
+        <p style="font-size:13px;color:#667085;margin:0 0 14px">업종에 맞는 KPI 세트를 선택해 바로 채울 수 있습니다. 숫자는 <b>반드시 실제 현황에 맞게</b> 수정하세요.</p>
+        <div class="callout warn" style="font-size:12px;margin-bottom:14px">
+          ⚠️ 아래 수치는 <b>참고용 예시</b>입니다. 실제 본인 사업장의 현재값을 직접 측정·기입해야 선정에 유리합니다.
+        </div>
+        ${cards}
+        <div style="font-size:12px;color:#667085;margin-top:6px">
+          KPI를 직접 입력하고 싶다면 창을 닫고 성과지표 항목에 바로 작성하세요.
+        </div>
+        <button class="btn btn-ghost btn-sm" id="kpiModalClose" style="position:absolute;top:18px;right:18px;padding:4px 10px">✕</button>
+      </div>`;
+  }
+
+  function openKpiModal() {
+    collectState();
+    const matched = detectPresets(state.industry || '');
+    let modal = document.getElementById('kpiGuideModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'kpiGuideModal';
+      modal.className = 'modal-overlay hidden';
+      modal.style.position = 'fixed';
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = renderModal(matched);
+    modal.classList.remove('hidden');
+
+    const presets = matched.length ? matched : [DEFAULT_PRESET];
+    modal.querySelectorAll('.kpi-apply-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx, 10);
+        fillKpi(presets[idx].kpis);
+        modal.classList.add('hidden');
+        toast('KPI 추천값이 채워졌습니다. 실제 수치로 수정하세요.');
+        showStep(2);
+      });
+    });
+    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+    modal.querySelector('#kpiModalClose').addEventListener('click', () => modal.classList.add('hidden'));
+  }
+
+  document.getElementById('kpiGuideBtn').addEventListener('click', openKpiModal);
 })();
 </script>
 
