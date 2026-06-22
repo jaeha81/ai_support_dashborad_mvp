@@ -136,6 +136,10 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 .ai-btn{background:#eef2ff;color:#3b5bdb;border:1px solid #c0cfff;font-size:11px;padding:4px 10px;border-radius:8px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-weight:700;line-height:1.4;transition:.15s}
 .ai-btn:hover{background:#dce7ff}
 .ai-btn:disabled{opacity:.5;cursor:wait}
+.idea-card{background:linear-gradient(135deg,#f0f5ff,#eef9f4);border:1.5px solid #c5d8ff;border-radius:var(--radius);padding:22px;margin-bottom:18px}
+.idea-card h3{margin:0 0 4px;color:#1a3a6b}
+.idea-step{display:none}.idea-step.active{display:block}
+.idea-tag{display:inline-block;background:#0b1f3a;color:#fff;border-radius:6px;padding:2px 9px;font-size:11px;font-weight:800;margin-bottom:8px}
 @media(max-width:1080px){
   .shell{grid-template-columns:1fr}
   .sidebar{position:static;display:flex;overflow:auto;gap:5px}
@@ -293,6 +297,44 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 
     <!-- 3. AI 적용모델 -->
     <section class="panel" id="panel-2">
+      <!-- 사업 현황 인터뷰 카드 -->
+      <div class="idea-card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px">
+          <div>
+            <span class="idea-tag">AI 아이디어 도우미</span>
+            <h3>내 사업을 쉬운 말로 알려주세요</h3>
+            <p class="sub" style="margin:4px 0 0">AI를 몰라도 괜찮습니다. 지금 하시는 일을 그대로 적으면 AI가 지원금에 맞는 아이디어를 만들어드립니다.</p>
+          </div>
+          <button class="btn btn-primary" id="ideaGenBtn" style="flex-shrink:0;white-space:nowrap">✨ AI 아이디어 생성</button>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>하루 주요 업무를 순서대로 알려주세요</label>
+            <textarea data-field="bizDaily" rows="3" placeholder="예: 오전에 재고 확인 → 오전 손님 응대 → 점심 후 주문서 정리 → 저녁 마감 정산"></textarea>
+          </div>
+          <div class="field">
+            <label>매일 반복하는 귀찮은 업무가 있나요?</label>
+            <textarea data-field="bizRepeat" rows="3" placeholder="예: 매일 재고를 손으로 세고 엑셀에 입력함, 단골 손님한테 매번 같은 안내 문자를 보냄"></textarea>
+          </div>
+          <div class="field">
+            <label>가장 시간이 많이 걸리는 일은? 얼마나 걸리나요?</label>
+            <textarea data-field="bizTimeConsume" rows="3" placeholder="예: 견적서 작성이 건당 2~3시간 걸림, 월말 정산이 하루 종일 걸림"></textarea>
+          </div>
+          <div class="field">
+            <label>손님·고객 응대에서 자주 겪는 어려움은?</label>
+            <textarea data-field="bizCustomerIssue" rows="3" placeholder="예: 같은 질문을 반복해서 받음, 예약·취소 관리가 복잡함, 불만 처리가 오래 걸림"></textarea>
+          </div>
+          <div class="field">
+            <label>실수가 자주 나거나 빠트리기 쉬운 업무는?</label>
+            <textarea data-field="bizMistake" rows="3" placeholder="예: 주문량을 잘못 계산해 재고가 부족해짐, 납기일을 놓치는 경우가 있음"></textarea>
+          </div>
+          <div class="field">
+            <label>지금 가장 해결하고 싶은 업무 고민 한 가지는?</label>
+            <textarea data-field="bizGoal" rows="3" placeholder="예: 혼자 다 하다 보니 새벽까지 일하게 됨. 사람을 더 쓰지 않고 해결하고 싶음"></textarea>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <h3>AI 활용모델 설계</h3><p class="sub">현재 업무 흐름과 문제를 먼저 정의한 뒤, AI가 어디에 어떻게 들어가는지 연결합니다.</p>
         <div class="grid-2">
@@ -980,6 +1022,154 @@ ${ctx}
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addButtons);
   else addButtons();
+
+  // ── AI 아이디어 도우미 ──────────────────────────────────────────
+
+  function buildIdeaPrompt() {
+    collectState();
+    const s = state;
+    const info = [
+      `업종: ${s.industry || '미입력'}`,
+      `지역: ${s.region || '미입력'}`,
+      `신청유형: ${s.applyType || '미입력'}`,
+      s.bizDaily       ? `하루 업무 흐름: ${s.bizDaily}` : null,
+      s.bizRepeat      ? `반복 귀찮은 업무: ${s.bizRepeat}` : null,
+      s.bizTimeConsume ? `시간 많이 걸리는 일: ${s.bizTimeConsume}` : null,
+      s.bizCustomerIssue ? `고객 응대 어려움: ${s.bizCustomerIssue}` : null,
+      s.bizMistake     ? `자주 나는 실수: ${s.bizMistake}` : null,
+      s.bizGoal        ? `가장 해결하고 싶은 고민: ${s.bizGoal}` : null,
+    ].filter(Boolean).join('\n');
+
+    return `당신은 소상공인 AI 활용지원 사업 전문 컨설턴트입니다.
+아래 소상공인의 사업 현황을 보고, 2026 혁신 소상공인 AI 활용지원 사업(정부지원금 최대 3,200만원) 신청에 가장 적합한 AI 활용 아이디어 1가지를 제안해주세요.
+
+[규칙]
+- 소상공인이 실제로 도입 가능한 현실적인 아이디어를 제안하세요.
+- 거창한 기술보다 반복 업무 자동화, 고객 응대 효율화, 문서 작성 자동화 등 실용적인 것을 우선하세요.
+- 수치나 사실을 지어내지 마세요. 예시 수치는 [실제값으로 수정] 표시를 붙이세요.
+- 아래 형식을 정확히 지켜 출력하세요. 형식 외 설명을 추가하지 마세요.
+
+[소상공인 사업 현황]
+${info}
+
+[출력 형식 — 반드시 이 형식 그대로]
+[아이템요약]
+(AI를 어떤 업무에 어떻게 적용하는지 한 문장 30~60자)
+
+[현재프로세스]
+(현재 업무 흐름을 "A → B → C" 단계로 3~5단계)
+
+[핵심문제]
+(현재 업무에서 발생하는 구체적 문제점 2~3문장)
+
+[AI도입필요성]
+(왜 AI가 필요한지, 도입 후 무엇이 달라지는지 2~3문장)
+
+[AI적용방식]
+(AI를 어느 단계에 어떻게 적용하는지 구체적으로 2~3문장)`;
+  }
+
+  function parseIdeaResult(text) {
+    const map = {
+      '아이템요약': 'itemSummary',
+      '현재프로세스': 'currentProcess',
+      '핵심문제': 'painPoint',
+      'AI도입필요성': 'aiNeed',
+      'AI적용방식': 'aiMethod',
+    };
+    const result = {};
+    const regex = /\[([^\]]+)\]\s*([\s\S]*?)(?=\[[^\]]+\]|$)/g;
+    let m;
+    while ((m = regex.exec(text)) !== null) {
+      const key = m[1].trim();
+      const val = m[2].trim();
+      if (map[key]) result[map[key]] = val;
+    }
+    return result;
+  }
+
+  function createIdeaModal() {
+    if (document.getElementById('ideaModal')) return;
+    const el = document.createElement('div');
+    el.id = 'ideaModal';
+    el.className = 'modal-overlay hidden';
+    el.innerHTML = `
+      <div class="modal" style="max-width:560px;text-align:left">
+        <div class="modal-icon">✨</div>
+        <div class="modal-title">AI 아이디어 도우미</div>
+
+        <div class="idea-step active" id="ideaStep1">
+          <div class="idea-tag">STEP 1</div>
+          <p style="font-size:13px;color:#344054;margin:6px 0 10px">아래 프롬프트를 복사해 <b>Claude.ai</b>에 붙여넣으세요.</p>
+          <textarea id="ideaPromptText" readonly style="width:100%;min-height:200px;font-size:12px;border:1px solid #e3e8f0;border-radius:10px;padding:10px;resize:vertical;background:#f8fafc;font-family:monospace"></textarea>
+          <div class="modal-footer" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+            <button class="btn btn-primary btn-sm" id="ideaCopyBtn">프롬프트 복사</button>
+            <a class="btn btn-secondary btn-sm" href="https://claude.ai" target="_blank">Claude.ai 열기</a>
+            <button class="btn btn-ghost btn-sm" id="ideaNextBtn">결과 붙여넣기 →</button>
+          </div>
+        </div>
+
+        <div class="idea-step" id="ideaStep2">
+          <div class="idea-tag">STEP 2</div>
+          <p style="font-size:13px;color:#344054;margin:6px 0 10px">Claude.ai에서 받은 결과를 아래에 붙여넣고 <b>자동 채우기</b>를 누르세요.</p>
+          <textarea id="ideaResultText" style="width:100%;min-height:200px;font-size:12px;border:1px solid #e3e8f0;border-radius:10px;padding:10px;resize:vertical;background:#fff" placeholder="Claude.ai 결과를 여기에 붙여넣으세요..."></textarea>
+          <div class="callout warn" style="font-size:12px;margin-top:10px">AI 초안입니다. 반드시 실제 사실로 수정하세요.</div>
+          <div class="modal-footer" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+            <button class="btn btn-ghost btn-sm" id="ideaBackBtn">← 프롬프트로</button>
+            <button class="btn btn-primary btn-sm" id="ideaApplyBtn">AI 적용모델 자동 채우기</button>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost btn-sm" id="ideaCloseBtn" style="position:absolute;top:18px;right:18px;padding:4px 10px">✕</button>
+      </div>`;
+    el.style.position = 'fixed';
+    document.body.appendChild(el);
+
+    document.getElementById('ideaCopyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(document.getElementById('ideaPromptText').value);
+        document.getElementById('ideaCopyBtn').textContent = '복사됨 ✓';
+        setTimeout(() => document.getElementById('ideaCopyBtn').textContent = '프롬프트 복사', 1800);
+      } catch { toast('복사 실패'); }
+    });
+    document.getElementById('ideaNextBtn').addEventListener('click', () => {
+      document.getElementById('ideaStep1').classList.remove('active');
+      document.getElementById('ideaStep2').classList.add('active');
+    });
+    document.getElementById('ideaBackBtn').addEventListener('click', () => {
+      document.getElementById('ideaStep2').classList.remove('active');
+      document.getElementById('ideaStep1').classList.add('active');
+    });
+    document.getElementById('ideaApplyBtn').addEventListener('click', () => {
+      const text = document.getElementById('ideaResultText').value.trim();
+      if (!text) { toast('Claude.ai 결과를 먼저 붙여넣으세요.'); return; }
+      const parsed = parseIdeaResult(text);
+      const count = Object.keys(parsed).length;
+      if (count === 0) { toast('형식을 인식하지 못했습니다. [아이템요약] 등 태그가 포함된 결과를 붙여넣으세요.'); return; }
+      Object.entries(parsed).forEach(([field, val]) => {
+        const el = document.querySelector(`[data-field="${field}"]`);
+        if (el) { el.value = val; el.dispatchEvent(new Event('input', { bubbles: true })); }
+      });
+      collectState();
+      document.getElementById('ideaModal').classList.add('hidden');
+      toast(`${count}개 필드가 채워졌습니다. 실제 정보로 수정하세요.`);
+    });
+    document.getElementById('ideaCloseBtn').addEventListener('click', () => el.classList.add('hidden'));
+    el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+  }
+
+  function openIdeaModal() {
+    createIdeaModal();
+    document.getElementById('ideaPromptText').value = buildIdeaPrompt();
+    document.getElementById('ideaResultText').value = '';
+    document.getElementById('ideaStep1').classList.add('active');
+    document.getElementById('ideaStep2').classList.remove('active');
+    document.getElementById('ideaModal').classList.remove('hidden');
+  }
+
+  document.addEventListener('click', e => {
+    if (e.target.id === 'ideaGenBtn') openIdeaModal();
+  });
 })();
 </script>
 
