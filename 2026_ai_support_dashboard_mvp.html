@@ -761,7 +761,21 @@ function download(name,content,type){
 $("#txtBtn").addEventListener("click",()=>{if(requireTruth())download("2026_AI활용지원_사업계획서_초안.txt",$("#draftOutput").textContent,"text/plain;charset=utf-8")});
 $("#docBtn").addEventListener("click",()=>{if(!requireTruth())return;const body=esc($("#draftOutput").textContent).replace(/\n/g,"<br>");download("2026_AI활용지원_사업계획서_초안.doc",`<html><meta charset="utf-8"><body style="font-family:Malgun Gothic;line-height:1.7">${body}</body></html>`,"application/msword")});
 $("#backupBtn").addEventListener("click",()=>{collectState();download("ai_support_dashboard_backup.json",JSON.stringify(state,null,2),"application/json;charset=utf-8")});
-$("#saveBtn").addEventListener("click",()=>{collectState();toast("현재 브라우저에 저장했습니다.")});
+$("#saveBtn").addEventListener("click", async () => {
+  collectState();
+  toast("저장 중…");
+  try {
+    const resp = await fetch('/api/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(state)
+    });
+    if (resp.ok) toast("저장하고 메일로 전송했습니다.");
+    else toast("저장했습니다. (메일 오류 — 환경변수 확인 필요)");
+  } catch {
+    toast("저장했습니다. (오프라인 — 메일 미전송)");
+  }
+});
 
 document.addEventListener("input",e=>{if(e.target.matches("[data-field],[data-multi],[data-doc],[data-score]"))collectState()});
 document.addEventListener("change",e=>{if(e.target.matches("[data-field],[data-multi],[data-doc],[data-score]"))collectState()});
